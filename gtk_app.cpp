@@ -4,11 +4,25 @@
 
 #include "gtk_app.h"
 #include "logger.h"
+#include "draw_area.h"
 
 class main_window : public Gtk::ApplicationWindow
 {
+    Gtk::Grid  m_h_grid, m_v_grid;
+    draw_area  m_draw_area;
+    Gtk::Button m_button;
 public:
     main_window() : Gtk::ApplicationWindow() {
+        LOG("main_window() - ctor")
+        m_h_grid.set_orientation(Gtk::ORIENTATION_HORIZONTAL);
+        m_v_grid.set_orientation(Gtk::ORIENTATION_VERTICAL);
+
+        m_v_grid.add(m_h_grid);
+        m_v_grid.add(m_draw_area);
+        m_h_grid.add(m_button);
+
+        add(m_v_grid);
+        show_all_children();
     };
 
     void open_file_view(const Glib::RefPtr<Gio::File>& file) {
@@ -20,8 +34,9 @@ gtk_app::~gtk_app() {
 }
 
 gtk_app::gtk_app()
-        : Gtk::Application("org.gtkmm.examples.application", Gio::APPLICATION_HANDLES_OPEN)
+ : Gtk::Application("lua_draw", Gio::APPLICATION_HANDLES_OPEN)
 {
+    LOG("gtk_app() - ctor")
 }
 
 Glib::RefPtr<gtk_app> gtk_app::create()
@@ -31,29 +46,25 @@ Glib::RefPtr<gtk_app> gtk_app::create()
 
 main_window* gtk_app::create_main_window()
 {
-    auto appwindow = new main_window();
+    LOG("gtk_app::create_main_window()")
 
-    // Make sure that the application runs for as long this window is still open.
-    add_window(*appwindow);
+    auto app_window = new main_window();
 
-    // Gtk::Application::add_window() connects a signal handler to the window's
-    // signal_hide(). That handler removes the window from the application.
-    // If it's the last window to be removed, the application stops running.
-    // Gtk::Window::set_application() does not connect a signal handler, but is
-    // otherwise equivalent to Gtk::Application::add_window().
+    add_window(*app_window);
 
-    // Delete the window when it is hidden.
-    appwindow->signal_hide().connect(sigc::bind<Gtk::Window*>(sigc::mem_fun(*this,
-                                                                            &gtk_app::on_hide_window), appwindow));
 
-    return appwindow;
+    app_window->signal_hide().connect(
+            sigc::bind<Gtk::Window*>(sigc::mem_fun(*this, &gtk_app::on_hide_window), app_window));
+
+    return app_window;
 }
 
 void gtk_app::on_activate()
 {
+    LOG("gtk_app::on_activate()")
     // The application has been started, so let's show a window.
-    auto appwindow = create_main_window();
-    appwindow->present();
+    auto app_window = create_main_window();
+    app_window->present();
 }
 
 void gtk_app::on_open(const Gio::Application::type_vec_files& files,
